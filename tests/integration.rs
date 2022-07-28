@@ -25,7 +25,7 @@ fn sql_vs_expected_output() {
                     .unwrap()
                     .replace("%cwd%", &pwd);
                 let mut psql = Command::new("psql")
-                    .args(&["-h", &psql_h, "-d", &psql_d, "--no-align"])
+                    .args(&["-h", &psql_h, "-d", &psql_d, "--no-align", "--no-psqlrc"])
                     .stdin(Stdio::piped())
                     .stdout(Stdio::piped())
                     .stderr(Stdio::piped())

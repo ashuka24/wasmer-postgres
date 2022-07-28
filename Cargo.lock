@@ -684,6 +684,7 @@ dependencies = [
 [[package]]
 name = "pg-extend"
 version = "0.2.1"
+source = "git+https://github.com/ashuka24/pg-extend-rs?branch=support-gp6#f6f141773971a81f097296cc6f871ac22e74d642"
 dependencies = [
  "bindgen 0.48.1",
  "clang",
@@ -692,6 +693,7 @@ dependencies = [
 [[package]]
 name = "pg-extern-attr"
 version = "0.2.2"
+source = "git+https://github.com/ashuka24/pg-extend-rs?branch=support-gp6#f6f141773971a81f097296cc6f871ac22e74d642"
 dependencies = [
  "proc-macro2",
  "quote",
