@@ -10,7 +10,8 @@ use std::{
 #[test]
 fn sql_vs_expected_output() {
     let pwd = var("PWD").expect("Cannot read `$PWD`.");
-    let psql_h = &format!("{cwd}/tests/pg", cwd = pwd);
+    let psql_h = var("PGHOST").unwrap_or("localhost".to_owned());
+    let psql_d = var("PGDATABASE").unwrap_or("postgres".to_owned());
     let fixtures_directory = Path::new("./tests/sql");
     let sql = OsStr::new("sql");
 
@@ -24,7 +25,7 @@ fn sql_vs_expected_output() {
                     .unwrap()
                     .replace("%cwd%", &pwd);
                 let mut psql = Command::new("psql")
-                    .args(&["-h", psql_h, "-d", "postgres", "--no-align"])
+                    .args(&["-h", &psql_h, "-d", &psql_d, "--no-align"])
                     .stdin(Stdio::piped())
                     .stdout(Stdio::piped())
                     .stderr(Stdio::piped())

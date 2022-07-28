@@ -41,8 +41,11 @@ BEGIN
         EXECUTE format('DROP SCHEMA IF EXISTS %I CASCADE', wasm_schema_name);
         EXECUTE format('CREATE SCHEMA %I', wasm_schema_name);
 
-        IMPORT FOREIGN SCHEMA wasm_instances FROM SERVER wasm_instances INTO wasm;
-        IMPORT FOREIGN SCHEMA wasm_exported_functions FROM SERVER wasm_exported_functions INTO wasm;
+        -- GPDB6 does not support import schemas from FDW
+        -- IMPORT FOREIGN SCHEMA wasm_instances FROM SERVER wasm_instances INTO wasm;
+        EXECUTE format('CREATE FOREIGN TABLE %I.instances (id text, wasm_file text) SERVER wasm_instances', wasm_schema_name);
+        -- IMPORT FOREIGN SCHEMA wasm_exported_functions FROM SERVER wasm_exported_functions INTO wasm;
+        EXECUTE format('CREATE FOREIGN TABLE %I.exported_functions (instance_id text, name text, inputs text, outputs text) SERVER wasm_exported_functions', wasm_schema_name);
     END;
 
     -- Function `wasm__new_instance`

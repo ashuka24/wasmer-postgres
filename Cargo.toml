@@ -16,5 +16,5 @@ crate-type = ["cdylib"]
 uuid = { version = "0.7", features = ["v5"] }
 wasmer-runtime = "0.6.0"
 wasmer-runtime-core = "0.6.0"
-pg-extend = { git = "https://github.com/bluejekyll/pg-extend-rs", branch = "master" }
-pg-extern-attr = { git = "https://github.com/bluejekyll/pg-extend-rs", branch = "master" }
+pg-extend = { git = "https://github.com/ashuka24/pg-extend-rs", branch = "support-gp6" }
+pg-extern-attr = { git = "https://github.com/ashuka24/pg-extend-rs", branch = "support-gp6" }
