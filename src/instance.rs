@@ -1,9 +1,8 @@
-use pg_extend::error;
+use pg_extend::{debug, error};
 use pg_extern_attr::pg_extern;
 use std::{collections::HashMap, fs::File, io::prelude::*, sync::RwLock};
 use uuid::Uuid;
-use wasmer_runtime::{imports, instantiate, Instance, Value};
-use wasmer_runtime_core::{cache::WasmHash, types::Type};
+use wasmer::{imports, Instance, Module, Store, Type, Value};
 
 pub(crate) struct InstanceInfo {
     pub(crate) instance: Instance,
@@ -27,26 +26,40 @@ pub(crate) fn get_instances() -> &'static RwLock<HashMap<String, InstanceInfo>> 
 fn new_instance(wasm_file: String) -> Option<String> {
     let mut file = match File::open(&wasm_file) {
         Ok(file) => file,
-        Err(_) => return None,
+        Err(e) => {
+            error!("error opening {} - {}", &wasm_file, e);
+            return None
+        },
     };
+
+    debug!("opened WASM file {}", &wasm_file);
 
     let mut bytes = Vec::new();
 
-    if let Err(_) = file.read_to_end(&mut bytes) {
+    if let Err(e) = file.read_to_end(&mut bytes) {
+        error!("error reading {} - {}", &wasm_file, e);
         return None;
     }
 
-    let import_object = imports! {};
+    debug!("read WASM file {}", &wasm_file);
 
-    match instantiate(bytes.as_slice(), &import_object) {
+    let store = Store::default();
+    let module = Module::new(&store, &bytes).unwrap();
+
+    debug!("created module for WASM file {}", &wasm_file);
+
+    let import_object = imports! {};
+    match Instance::new(&module, &import_object) {
         Ok(instance) => {
             let mut instances = get_instances().write().unwrap();
             let key = Uuid::new_v5(
                 &Uuid::NAMESPACE_OID,
-                WasmHash::generate(bytes.as_slice()).encode().as_bytes(),
+                wasmer_cache::Hash::generate(bytes.as_slice()).to_string().as_bytes()
             )
             .to_hyphenated()
             .to_string();
+
+            debug!("adding instance with key {}", &key);
 
             instances.insert(
                 key.clone(),
@@ -57,8 +70,11 @@ fn new_instance(wasm_file: String) -> Option<String> {
             );
 
             Some(key)
-        }
-        Err(_) => None,
+        },
+        Err(e) => {
+            error!("error instantiating instance from {} - {}", &wasm_file, e);
+            None
+        },
     }
 }
 
@@ -67,7 +83,7 @@ fn invoke_function(instance_id: String, function_name: String, arguments: &[i64]
 
     match instances.get(&instance_id) {
         Some(InstanceInfo { instance, .. }) => {
-            let function = match instance.dyn_func(&function_name) {
+            let function = match instance.exports.get_function(&function_name) {
                 Ok(function) => function,
                 Err(error) => {
                     error!(
@@ -79,7 +95,7 @@ fn invoke_function(instance_id: String, function_name: String, arguments: &[i64]
                 }
             };
 
-            let signature = function.signature();
+            let signature = function.ty();
             let parameters = signature.params();
             let number_of_parameters = parameters.len() as isize;
             let number_of_arguments = arguments.len() as isize;

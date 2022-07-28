@@ -5,7 +5,7 @@ use pg_extend::{
     pg_type,
 };
 use pg_extern_attr::pg_foreignwrapper;
-use wasmer_runtime::{wasm::Type, Export};
+use wasmer::{Extern, Type};
 
 struct Row {
     instance_id: String,
@@ -39,6 +39,7 @@ impl ForeignData for ExportedFunctionsForeignDataWrapper {
                 Type::I64 => "int8",
                 Type::F32 | Type::F64 => "numeric",
                 Type::V128 => "decimal",
+                Type::ExternRef | Type::FuncRef => panic!("WASM type has not PG type equivalent"),
             }
         }
 
@@ -50,19 +51,22 @@ impl ForeignData for ExportedFunctionsForeignDataWrapper {
                 .flat_map(|(instance_id, instance_info)| {
                     instance_info
                         .instance
-                        .exports()
+                        .exports
+                        .iter()
                         .filter_map(move |(export_name, export)| match export {
-                            Export::Function { signature, .. } => Some(Row {
+                            Extern::Function(function) => Some(Row {
                                 instance_id: instance_id.clone(),
                                 name: export_name.clone(),
-                                inputs: signature
+                                inputs: function
+                                    .ty()
                                     .params()
                                     .iter()
                                     .map(wasm_type_to_pg_type)
                                     .collect::<Vec<&str>>()
                                     .join(","),
-                                outputs: signature
-                                    .returns()
+                                outputs: function
+                                    .ty()
+                                    .results()
                                     .iter()
                                     .map(wasm_type_to_pg_type)
                                     .collect::<Vec<&str>>()
